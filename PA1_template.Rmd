@@ -1,77 +1,79 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: html_document:
-keep_md: true
+title: "PA1_Template.Rmd"
+output: html_document
 ---
-
-## Loading and preprocessing the data
-
-unzip("activity.zip")
-data <- read.csv("activity.csv", colClasses = c("integer", "Date", "factor"))
-data$month <- as.numeric(format(data$date, "%m"))
-notNA <- na.omit(data)
-rownames(notNA) <- 1:nrow(notNA)
-head(notNA)
-dim(notNA)
+```{r}
 library(ggplot2)
+data <- read.table('activity.csv',sep = ",",header = TRUE, na.strings ="NA",colClasses = c('integer','Date','factor'))
+new.data <- na.omit(data)
+total.steps <- tapply(new.data$steps, new.data$date, FUN = sum)
+plot1 <- ggplot(new.data, aes(date, steps)) + geom_bar(stat = "identity",binwidth = .5) +
+        labs(title = "Histogram of Total Number of Steps Taken Each Day",x = "Date", y = "Total Number of Steps")
+print(plot1)
+```
 
-## Histogram for total nos of step per day 
-ggplot(notNA, aes(date, steps)) + geom_bar(stat = "identity", colour = "green", fill = "green", width = 0.7) + facet_grid(. ~ month, scales = "free") + labs(title = "Histogram of Total Number of Steps Taken Each Day", x = "Date", y = "Total number of steps")
-
-
-## What is the average daily activity pattern?
-totalSteps <- aggregate(notNA$steps, list(Date = notNA$date), FUN = "sum")$x
-mean(totalSteps)
-median(totalSteps)
-
-## What is the average daily activity pattern
-avgSteps <- aggregate(notNA$steps, list(interval = as.numeric(as.character(notNA$interval))), FUN = "mean")
-names(avgSteps)[2] <- "meanOfSteps"
-ggplot(avgSteps, aes(interval, meanOfSteps)) + geom_line(color = "steelblue", size = 0.8) + labs(title = "Time Series Plot of the 5-minute Interval", x = "5-minute intervals", y = "Average Number of Steps Taken")
-
-
-## Accounting for missing values using 5 minutes interval in the steps cloumn and create a new data set
-
-sum(is.na(data))
-newData <- data 
-for (i in 1:nrow(newData)) {
-    if (is.na(newData$steps[i])) {
-        newData$steps[i] <- avgSteps[which(newData$interval[i] == avgSteps$interval), ]$meanOfSteps
+What is the average daily activity pattern
+```{r}
+mean(total.steps)
+median(total.steps)
+averages <- aggregate(new.data$steps, list(interval = as.numeric(as.character(new.data$interval))), FUN = "mean")
+names(averages)[2] <- "Avg.Steps"
+plot2 <- ggplot(averages, aes(interval, Avg.Steps)) + geom_line(color = "green", size = 0.7) + labs(title = "Time Series Plot of the 5-minute Intervals", x = "5-minute intervals", y = "Average Number of Steps Taken")
+print(plot2)
+```
+Which 5-minute interval, on average across all days, contains the most steps?
+```{r}
+averages[averages$Avg.Steps == max(averages$Avg.Steps),]
+```
+Total number of incomplete cases
+```{r}
+sum(!complete.cases(data))
+```
+Imputing missing values by using mean for that 5-minute interval.
+```{r}
+impData <- data 
+for (i in 1:nrow(impData)) {
+    if (is.na(impData$steps[i])) {
+        impData$steps[i] <- averages[which(impData$interval[i] == averages$interval), ]$Avg.Steps
     }
 }
+```
+Proof that all missing values have been filled in.
+```{r}
+sum(!complete.cases(impData))
+plot3 <- ggplot(impData, aes(date, steps)) + geom_bar(stat = "identity",binwidth = .5) +
+        labs(title = "Histogram of Total Number of Steps Taken Each Day (Imputed Data)",x = "Date", y = "Total Number of Steps")
+print(plot3)
+```
+```{r}
+total.steps.impute <- tapply(impData$steps, impData$date, FUN = sum)
+mean(total.steps.impute)
+```
+Median total number of steps taken per day. Imputed dataset.
 
-head(newData)
-sum(is.na(newData))
-ggplot(newData, aes(date, steps)) + geom_bar(stat = "identity", colour = "green", fill = "green",width = 0.7) + facet_grid(. ~ month, scales = "free") + labs(title = "Histogram of Total Number of Steps Taken Each Day (no missing data)", x = "Date", y = "Total number of steps")
+```{r}
+median(total.steps.impute)
+```
+Comparing means and medians reveals that both new means are the same while the new median is greater than the old median.
+Creating factor variables indicating whether the date is a weekday or weekend.
+```{r}
+impData$weekdays <- factor(format(impData$date, "%A"))
+levels(impData$weekdays)
+levels(impData$weekdays) <- list(weekday = c("Monday", "Tuesday",
+                                             "Wednesday", 
+                                             "Thursday", "Friday"),
+                                 weekend = c("Saturday", "Sunday"))
+levels(impData$weekdays)
+table(impData$weekdays)
 
-##Mean total number of steps taken per day:
-newTotalSteps <- aggregate(newData$steps, list(Date = newData$date), FUN = "sum")$x
-newMean <- mean(newTotalSteps)
-newMean
-
-#Median total number of steps taken per day:
-
-newMedian <- median(newTotalSteps)
-newMedian
-
-#Compare them with the two before imputing missing data:
-
-oldMean <- mean(totalSteps)
-oldMedian <- median(totalSteps)
-newMean - oldMean
-newMedian - oldMedian
-
-
-## Are there differences in activity patterns between weekdays and weekends?
-head(newData)
-newData$weekdays <- factor(format(newData$date, "%A"))
-levels(newData$weekdays)
-levels(newData$weekdays) <- list(weekday = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), weekend = c("Saturday", "Sunday"))
-levels(newData$weekdays)
-table(newData$weekdays)
-
-avgSteps <- aggregate(newData$steps, list(interval = as.numeric(as.character(newData$interval)),weekdays = newData$weekdays),
-FUN = "mean")
-names(avgSteps)[3] <- "meanOfSteps"
+new.averages <- aggregate(impData$steps, 
+                      list(interval = as.numeric(as.character(impData$interval)), 
+                           weekdays = impData$weekdays),
+                      FUN = "mean")
+names(new.averages)[3] <- "meanOfSteps"
 library(lattice)
-xyplot(avgSteps$meanOfSteps ~ avgSteps$interval | avgSteps$weekdays, layout = c(1, 2), type = "l", xlab = "Interval", ylab = "Number of steps")
+plot4 <- xyplot(new.averages$meanOfSteps ~ new.averages$interval | new.averages$weekdays, 
+       layout = c(1, 2), type = "l", 
+       xlab = "Interval", ylab = "Number of steps")
+print(plot4)
+```
