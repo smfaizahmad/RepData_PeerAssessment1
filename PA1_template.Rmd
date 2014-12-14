@@ -29,9 +29,7 @@ names(avgSteps)[2] <- "meanOfSteps"
 ggplot(avgSteps, aes(interval, meanOfSteps)) + geom_line(color = "steelblue", size = 0.8) + labs(title = "Time Series Plot of the 5-minute Interval", x = "5-minute intervals", y = "Average Number of Steps Taken")
 
 
-## Accounting for missing values
-
-# Strategy is to use the mean for that 5-minute interval to fill each NA value in the steps column. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+## Accounting for missing values using 5 minutes interval in the steps cloumn and create a new data set
 
 sum(is.na(data))
 newData <- data 
