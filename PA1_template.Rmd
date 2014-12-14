@@ -5,7 +5,7 @@ keep_md: true
 ---
 
 ## Loading and preprocessing the data
-library(ggplot2)
+
 unzip("activity.zip")
 data <- read.csv("activity.csv", colClasses = c("integer", "Date", "factor"))
 data$month <- as.numeric(format(data$date, "%m"))
@@ -13,6 +13,7 @@ notNA <- na.omit(data)
 rownames(notNA) <- 1:nrow(notNA)
 head(notNA)
 dim(notNA)
+library(ggplot2)
 
 ## Histogram for total nos of step per day 
 ggplot(notNA, aes(date, steps)) + geom_bar(stat = "identity", colour = "green", fill = "green", width = 0.7) + facet_grid(. ~ month, scales = "free") + labs(title = "Histogram of Total Number of Steps Taken Each Day", x = "Date", y = "Total number of steps")
